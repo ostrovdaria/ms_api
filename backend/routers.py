@@ -210,3 +210,34 @@ def get_owners_with_specific_lastname(db: Session = Depends(get_db)):
     if result is None:
         raise HTTPException(status_code=404, detail="Таких фамилий нет")
     return create_response_with_sql(result)
+
+#ЗАДАНИЕ 6
+@router.get("/analytics/profitable-wings-range", tags=["📊 Аналитика"])
+def read_wings_with_profit_range(db: Session = Depends(get_db)):
+    """Простой уровень: экспонаты с рентабельностью от 1.0 до 2.0"""
+    wings = crud.get_wings_with_profit_range(db)
+    if not wings:
+        raise HTTPException(status_code=404, detail="Экспонаты с нужной рентабельностью не найдены")
+    return {"data": wings}
+
+
+@router.get("/analytics/oldest-low-profit-wings", tags=["📊 Аналитика"])
+def read_oldest_low_profit_wings(db: Session = Depends(get_db)):
+    """Продвинутый уровень: 10 самых старых экспонатов с низкой рентабельностью (profit < 1.0)"""
+    wings = crud.get_oldest_low_profit_wings(db)
+    if not wings:
+        raise HTTPException(status_code=404, detail="Экспонаты с низкой рентабельностью не найдены")
+    return {"data": wings}
+
+#ЗАДАНИЕ 7
+@router.get("/analytics/move-seasonality", tags=["📊 Аналитика"])
+def read_move_seasonality(db: Session = Depends(get_db)):
+    """
+    Анализ сезонности спроса для планирования рекламных бюджетов:
+    - Подсчет количества перемещений по месяцам
+    - Средняя стоимость перемещения
+    """
+    stats = crud.get_monthly_move_stats(db)
+    if not stats:
+        raise HTTPException(status_code=404, detail="Данные перемещений не найдены")
+    return {"data": stats}

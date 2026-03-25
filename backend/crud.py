@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, and_
 import models
 import schemas
 
@@ -192,3 +192,61 @@ def get_owners_with_specific_lastname(db: Session):
         for r in result
     ]
 
+#ЗАДАНИЕ 6
+def get_wings_with_profit_range(db: Session, min_profit: float = 1.0, max_profit: float = 2.0) -> list:
+    """Возвращает экспонаты с рентабельностью от 1.0 до 2.0"""
+    try:
+        return (
+            db.query(models.Wing)
+            .filter(models.Wing.profit != None)
+            .filter(and_(
+                models.Wing.profit >= min_profit,
+                models.Wing.profit <= max_profit
+            ))
+            .all()
+        )
+    except Exception as e:
+        print(f"[get_wings_with_profit_range] Ошибка запроса: {e}")
+        return []
+
+def get_oldest_low_profit_wings(db: Session, limit: int = 10):
+    """10 самых старых экспонатов с низкой рентабельностью"""
+    try:
+        return (
+            db.query(models.Wing)
+            .filter(models.Wing.profit != None)
+            .filter(models.Wing.profit < 1.0)
+            .order_by(models.Wing.id.asc())
+            .limit(limit)
+            .all()
+        )
+    except Exception as e:
+        print(f"[get_oldest_low_profit_wings] Ошибка запроса: {e}")
+        return []
+    
+#ЗАДАНИЕ 7
+def get_monthly_move_stats(db: Session):
+    """
+    Аналитика сезонности спроса:
+    - Подсчет количества перемещений по месяцам
+    - Средняя стоимость перемещения
+    """
+    result = (
+        db.query(
+            func.strftime('%Y-%m', models.Move.dt).label('year_month'),
+            func.count(models.Move.id).label('moves_count'),
+            func.avg(models.Move.price).label('avg_price')
+        )
+        .group_by('year_month')
+        .order_by('year_month')
+        .all()
+    )
+    
+    return [
+        {
+            "year_month": r[0],
+            "moves_count": r[1],
+            "avg_price": float(r[2]) if r[2] is not None else 0
+        }
+        for r in result
+    ]
